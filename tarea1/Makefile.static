@@ -1,0 +1,18 @@
+# Makefile.static
+CC = gcc
+CFLAGS = -c
+AR = ar
+ARFLAGS = rcs
+LIBRARY = libucsp.a
+
+all: static
+
+static: ucsp.o
+	$(AR) $(ARFLAGS) $(LIBRARY) ucsp.o
+	$(CC) -o main.static.exe driver.c -L. -lucsp
+
+ucsp.o: ucsp.c
+	$(CC) $(CFLAGS) ucsp.c
+
+clean:
+	rm -f *.o *.a main.static.exe

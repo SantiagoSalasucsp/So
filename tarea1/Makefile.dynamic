@@ -1,0 +1,16 @@
+# Makefile.dynamic
+CC = gcc
+CFLAGS = -c -fPIC
+SHARED_LIB = libucsp.so
+
+all: dynamic
+
+dynamic: ucsp.o
+	$(CC) -shared -o $(SHARED_LIB) ucsp.o
+	$(CC) -o main.dynamic.exe driver.c -L. -lucsp -Wl,-rpath,.
+
+ucsp.o: ucsp.c
+	$(CC) $(CFLAGS) ucsp.c
+
+clean:
+	rm -f *.o *.so main.dynamic.exe
