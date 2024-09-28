@@ -9,11 +9,11 @@
 void die(char *s)
 {
   perror(s);
-  exit(1);
+  exit(1);r
 }
 
 struct msgbuf
-{
+{ 
     long    mtype;
     char    mtext[MAXSIZE];
 };
