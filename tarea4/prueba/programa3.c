@@ -18,8 +18,8 @@ int main() {
     printf("Proceso receptor iniciado. PID: %d\n", getpid());
 
     // Bucle infinito para mantener el proceso en ejecución
-    while(1) {
-        sleep(1);
+    while (1) {
+        pause();  // Esperar por señales
     }
 
     return 0;
