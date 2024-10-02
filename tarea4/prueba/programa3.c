@@ -8,18 +8,18 @@ void signal_handler(int signum) {
 }
 
 int main() {
-    // Registrar los manejadores de señales
+    
     signal(SIGINT, signal_handler);   // 2
     signal(SIGSTKFLT, signal_handler);// 16
     signal(SIGCHLD, signal_handler);  // 17
     signal(SIGCONT, signal_handler);  // 18
-    // No podemos manejar SIGSTOP (19)
+    
 
     printf("Proceso receptor iniciado. PID: %d\n", getpid());
 
-    // Bucle infinito para mantener el proceso en ejecución
+   
     while (1) {
-        pause();  // Esperar por señales
+        pause();  
     }
 
     return 0;

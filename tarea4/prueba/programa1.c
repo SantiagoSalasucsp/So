@@ -17,14 +17,14 @@ int main() {
     struct msgbuf message;
     int option, pid;
 
-    // Crear o obtener la cola de mensajes
+    
     if ((msqid = msgget(key, IPC_CREAT | 0666)) < 0) {
         perror("Error al crear la cola de mensajes");
         exit(1);
     }
 
     while (1) {
-        // Mostrar el menú y pedir datos
+        
         printf("\nMenú de señales:\n");
         printf("1. Señal 2 (SIGINT)\n");
         printf("2. Señal 16 (SIGSTKFLT)\n");
@@ -45,18 +45,18 @@ int main() {
         printf("Ingrese el PID del proceso: ");
         scanf("%d", &pid);
 
-        // Verificar si el PID es válido
+        
         if (kill(pid, 0) < 0) {
             perror("Error: PID inválido");
-            continue;  // Volver al menú si el PID es inválido
+            continue; 
         }
 
-        // Preparar el mensaje
-        message.mtype = (option <= 3) ? 1 : 2;  // Tipo 1 para 2, 16, 17; Tipo 2 para 18, 19
+        
+        message.mtype = (option <= 3) ? 1 : 2;  
         message.signal = (option == 1) ? SIGINT : (option == 2) ? SIGSTKFLT : (option == 3) ? SIGCHLD : (option == 4) ? SIGCONT : SIGSTOP;
         message.pid = pid;
 
-        // Enviar el mensaje a la cola
+       
         if (msgsnd(msqid, &message, sizeof(message) - sizeof(long), 0) < 0) {
             perror("Error al enviar el mensaje");
             exit(1);
