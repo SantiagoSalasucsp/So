@@ -1,85 +1,72 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>
-#include <csignal>
-#include <thread>
-#define MAXSIZE     128
+#include <signal.h>
+#include <unistd.h>
 
-void die(char *s)
-{
-  perror(s);
-  exit(1);
-}
+#define MAXSIZE 128
 
-struct my_msgbuf
-{
-    long    mtype;
-    char    mtext[MAXSIZE];
+struct msgbuf {
+    long mtype;
+    int signal;
+    int pid;
 };
 
-int msqid;
+void *thread_function(void *arg) {
+    int msqid = *(int*)arg;
+    struct msgbuf message;
+    long mtype = (long)pthread_self() % 2 + 1;
 
-void recibirTipo1(){
-	struct my_msgbuf rcvbuffer;
-	int numsig;
-	int pid;
+    while (1) {
+        if (msgrcv(msqid, &message, sizeof(message) - sizeof(long), mtype, 0) < 0) {
+            perror("msgrcv");
+            exit(1);
+        }
 
-	while(true){
-		if(msgrcv(msqid, &rcvbuffer, MAXSIZE,1,0)<0){
-			die("msgrcv tipo 1");
-		}
+        printf("Thread de tipo %ld recibió: Señal %d para PID %d\n", mtype, message.signal, message.pid);
 
-		sscanf(rcvbuffer.mtext, "%d %d", &numsig, &pid);
-
-		// Imprimir mensaje antes de enviar señal
-		std::cout << "Thread tipo 1 enviando señal " << numsig << " al proceso con PID " << pid << "\n";
-
-		// Enviar la señal
-		kill(pid, numsig);
-	}
+        if (kill(message.pid, 0) == 0) {
+            if (kill(message.pid, message.signal) < 0) {
+                perror("Error al enviar la señal");
+            } else {
+                if (message.signal != SIGSTOP) {
+                    printf("Señal %d enviada al proceso %d\n", message.signal, message.pid);
+                } else {
+                    printf("PID %d fue afectado por la señal %d (SIGSTOP)\n", message.pid, message.signal);
+                }
+            }
+        } else {
+            printf("Proceso con PID %d no existe o ya ha terminado.\n", message.pid);
+        }
+    }
+    return NULL;
 }
 
-void recibirTipo2(){
-	struct my_msgbuf rcvbuffer;
-	int numsig;
-	int pid;
+int main() {
+    int msqid;
+    key_t key = 1234;
+    pthread_t thread1, thread2;
 
-	while(true){
-		if(msgrcv(msqid, &rcvbuffer, MAXSIZE,2,0)<0){
-			die("msgrcv tipo 2");
-		}
+    if ((msqid = msgget(key, 0666)) < 0) {
+        perror("msgget");
+        exit(1);
+    }
 
-		sscanf(rcvbuffer.mtext, "%d %d", &numsig, &pid);
+    if (pthread_create(&thread1, NULL, thread_function, &msqid) != 0) {
+        perror("pthread_create");
+        exit(1);
+    }
 
-		// Imprimir mensaje antes de enviar señal
-		if (numsig == SIGSTOP) {
-			std::cout << "El PID " << pid << " será afectado por SIGSTOP (19)\n";
-		} else if (numsig == SIGCONT) {
-			std::cout << "El PID " << pid << " será reanudado con SIGCONT (18)\n";
-		} else {
-			std::cout << "Thread tipo 2 enviando señal " << numsig << " al proceso con PID " << pid << "\n";
-		}
+    if (pthread_create(&thread2, NULL, thread_function, &msqid) != 0) {
+        perror("pthread_create");
+        exit(1);
+    }
 
-		// Enviar la señal
-		kill(pid, numsig);
-	}
-}
+    pthread_join(thread1, NULL);
+    pthread_join(thread2, NULL);
 
-int main()
-{
-    key_t key;
-    key = 1234;
-
-    if ((msqid = msgget(key, 0666)) < 0)  die("msgget()");
-
-    std::thread thread1(recibirTipo1);
-    std::thread thread2(recibirTipo2);
-
-    thread1.join();
-    thread2.join();
-
-    exit(0);
+    return 0;
 }
