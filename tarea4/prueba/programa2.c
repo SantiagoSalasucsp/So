@@ -35,11 +35,10 @@ void *thread_function(void *arg) {
             if (kill(message.pid, message.signal) < 0) {
                 perror("Error al enviar la señal");
             } else {
-                // Manejo especial para la señal SIGSTOP (19)
-                if (message.signal == SIGSTOP) {
-                    printf("PID %d fue afectado por la señal %d (SIGSTOP)\n", message.pid, message.signal);
-                } else {
+                if (message.signal != SIGSTOP) {
                     printf("Señal %d enviada al proceso %d\n", message.signal, message.pid);
+                } else {
+                    printf("PID %d fue afectado por la señal %d (SIGSTOP)\n", message.pid, message.signal);
                 }
             }
         } else {

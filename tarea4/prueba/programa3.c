@@ -2,19 +2,11 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
-/*
-void signal_handler(int signum) {
-    printf("PID %d fue afectado por la señal %d\n", getpid(), signum);
-}*/
 
 void signal_handler(int signum) {
-    if (signum == SIGCONT) {
-        printf("Recibida señal SIGCONT. PID %d fue reanudado.\n", getpid());
-    } else {
-        printf("PID %d fue afectado por la señal %d\n", getpid(), signum);
-    }
-    fflush(stdout);  // Asegúrate de que el mensaje se imprima de inmediato
+    printf("PID %d fue afectado por la señal %d\n", getpid(), signum);
 }
+
 
 
 int main() {
