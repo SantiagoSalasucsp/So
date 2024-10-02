@@ -16,58 +16,48 @@ struct message {
 };
 
 void *thread_function(void *arg) {
-    int msqid = *(int*)arg;
+    int msqid;
     struct message msg;
-    long mtype = (long)arg == 1 ? 1 : 2;  // Thread 1 maneja tipo 1, Thread 2 maneja tipo 2
+    long mtype = (long)arg;
+
+    if ((msqid = msgget(KEY, 0666)) < 0) {
+        perror("msgget");
+        return NULL;
+    }
 
     while(1) {
-        if (msgrcv(msqid, &msg, sizeof(msg) - sizeof(long), mtype, 0) < 0) {
+        if (msgrcv(msqid, &msg, sizeof(struct message) - sizeof(long), mtype, 0) == -1) {
             perror("msgrcv");
+            sleep(1);
             continue;
         }
 
         printf("Thread de tipo %ld recibió: Señal %d para PID %d\n", mtype, msg.signal, msg.pid);
 
         if (kill(msg.pid, 0) == 0) {
-            if (msg.signal == SIGSTOP || msg.signal == SIGCONT) {
-                // Para SIGSTOP y SIGCONT, usamos kill() directamente
-                if (kill(msg.pid, msg.signal) < 0) {
-                    perror("kill (SIGSTOP/SIGCONT)");
-                } else {
-                    printf("Señal %d enviada al proceso %d\n", msg.signal, msg.pid);
-                }
+            if (kill(msg.pid, msg.signal) < 0) {
+                perror("kill");
             } else {
-                // Para otras señales, usamos pthread_kill() para mayor compatibilidad
-                if (pthread_kill(msg.pid, msg.signal) != 0) {
-                    perror("pthread_kill");
-                } else {
-                    printf("Señal %d enviada al proceso %d\n", msg.signal, msg.pid);
-                }
+                printf("Señal %d enviada al proceso %d\n", msg.signal, msg.pid);
             }
         } else {
-            if (errno == ESRCH) {
-                printf("Proceso con PID %d no existe.\n", msg.pid);
-            } else {
-                perror("kill");
-            }
+            printf("Proceso con PID %d no existe o ya ha terminado.\n", msg.pid);
         }
     }
     return NULL;
 }
 
 int main() {
-    int msqid;
     pthread_t thread1, thread2;
-    int thread1_type = 1;
-    int thread2_type = 2;
+    long thread1_type = 1;  // Para señales 2, 16, 17
+    long thread2_type = 2;  // Para señales 18, 19
 
-    if ((msqid = msgget(KEY, 0666)) < 0) {
-        perror("msgget");
+    if (pthread_create(&thread1, NULL, thread_function, (void *)thread1_type) != 0) {
+        perror("pthread_create");
         exit(1);
     }
 
-    if (pthread_create(&thread1, NULL, thread_function, &thread1_type) != 0 ||
-        pthread_create(&thread2, NULL, thread_function, &thread2_type) != 0) {
+    if (pthread_create(&thread2, NULL, thread_function, (void *)thread2_type) != 0) {
         perror("pthread_create");
         exit(1);
     }
