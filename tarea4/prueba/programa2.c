@@ -31,21 +31,19 @@ void *thread_function(void *arg) {
 
         // Validar si el proceso con ese PID existe antes de enviar la señal
         if (kill(message.pid, 0) == 0) {  // Verifica si el proceso con ese PID existe
-            // Manejo especial para SIGSTOP y SIGCONT
+            // Imprimir mensaje antes de enviar la señal
             if (message.signal == SIGSTOP) {
-                printf("PID %d fue afectado por la señal %d (SIGSTOP)\n", message.pid, message.signal);
-                // Enviar la señal SIGSTOP
+                printf("PID %d será detenido por la señal %d (SIGSTOP)\n", message.pid, message.signal);
                 if (kill(message.pid, message.signal) < 0) {
-                    perror("Error al enviar la señal SIGSTOP");
+                    perror("Error al enviar SIGSTOP");
                 }
             } else if (message.signal == SIGCONT) {
-                printf("PID %d fue afectado por la señal %d (SIGCONT)\n", message.pid, message.signal);
-                // Enviar la señal SIGCONT
+                printf("PID %d será reanudado por la señal %d (SIGCONT)\n", message.pid, message.signal);
                 if (kill(message.pid, message.signal) < 0) {
-                    perror("Error al enviar la señal SIGCONT");
+                    perror("Error al enviar SIGCONT");
                 }
             } else {
-                // Enviar otras señales
+                // Para otras señales, enviar la señal normalmente
                 if (kill(message.pid, message.signal) < 0) {
                     perror("Error al enviar la señal");
                 } else {
