@@ -16,27 +16,29 @@ struct msgbuf {
 };
 
 void *thread_function(void *arg) {
-    int msqid = *(int*)arg;
+    int thread_type = *(int*)arg;
+    int msqid;
+    key_t key = 1234;
     struct msgbuf message;
-    long mtype = (long)pthread_self() % 2 + 1;
+
+    if ((msqid = msgget(key, 0666)) < 0) {
+        perror("msgget");
+        exit(1);
+    }
 
     while (1) {
-        if (msgrcv(msqid, &message, sizeof(message) - sizeof(long), mtype, 0) < 0) {
+        if (msgrcv(msqid, &message, sizeof(message) - sizeof(long), thread_type, 0) < 0) {
             perror("msgrcv");
             exit(1);
         }
 
-        printf("Thread de tipo %ld recibió: Señal %d para PID %d\n", mtype, message.signal, message.pid);
+        printf("Thread de tipo %d recibió: Señal %d para PID %d\n", thread_type, message.signal, message.pid);
 
         if (kill(message.pid, 0) == 0) {
             if (kill(message.pid, message.signal) < 0) {
                 perror("Error al enviar la señal");
             } else {
-                if (message.signal != SIGSTOP) {
-                    printf("Señal %d enviada al proceso %d\n", message.signal, message.pid);
-                } else {
-                    printf("PID %d fue afectado por la señal %d (SIGSTOP)\n", message.pid, message.signal);
-                }
+                printf("Señal %d enviada al proceso %d\n", message.signal, message.pid);
             }
         } else {
             printf("Proceso con PID %d no existe o ya ha terminado.\n", message.pid);
@@ -46,21 +48,16 @@ void *thread_function(void *arg) {
 }
 
 int main() {
-    int msqid;
-    key_t key = 1234;
     pthread_t thread1, thread2;
+    int thread1_type = 1;  // Para señales 2, 16, 17
+    int thread2_type = 2;  // Para señales 18, 19
 
-    if ((msqid = msgget(key, 0666)) < 0) {
-        perror("msgget");
-        exit(1);
-    }
-
-    if (pthread_create(&thread1, NULL, thread_function, &msqid) != 0) {
+    if (pthread_create(&thread1, NULL, thread_function, &thread1_type) != 0) {
         perror("pthread_create");
         exit(1);
     }
 
-    if (pthread_create(&thread2, NULL, thread_function, &msqid) != 0) {
+    if (pthread_create(&thread2, NULL, thread_function, &thread2_type) != 0) {
         perror("pthread_create");
         exit(1);
     }
