@@ -16,7 +16,7 @@ struct msgbuf {
 };
 
 void *thread_function(void *arg) {
-    int msqid = *(int*)arg;
+    int msqid = *(int *)arg;
     struct msgbuf message;
     long mtype = (long)pthread_self() % 2 + 1;  // 1 para el primer thread, 2 para el segundo
 
@@ -35,10 +35,14 @@ void *thread_function(void *arg) {
             if (kill(message.pid, message.signal) < 0) {
                 perror("Error al enviar la señal");
             } else {
-                if (message.signal != SIGSTOP) {
-                    printf("Señal %d enviada al proceso %d\n", message.signal, message.pid);
+                // Manejo especial para SIGSTOP y SIGCONT
+                if (message.signal == SIGSTOP) {
+                    printf("Señal %d enviada al proceso %d (SIGSTOP)\n", message.signal, message.pid);
+                    printf("El proceso %d ha sido detenido.\n", message.pid);
+                } else if (message.signal == SIGCONT) {
+                    printf("Señal %d enviada al proceso %d (SIGCONT)\n", message.signal, message.pid);
                 } else {
-                    printf("PID %d fue afectado por la señal %d (SIGSTOP)\n", message.pid, message.signal);
+                    printf("Señal %d enviada al proceso %d\n", message.signal, message.pid);
                 }
             }
         } else {
